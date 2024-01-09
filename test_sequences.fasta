@@ -1,4 +1,6 @@
->sequence 1
+>sequence_1
 ATTTCCCGGGAAA
->sequence 2
+>sequence_2
 ATTCCCGGAAAA
+>sequence_3
+AATTTCCCGGGAAA
