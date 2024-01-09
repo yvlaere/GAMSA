@@ -233,17 +233,27 @@ def uniform_crossover(ind1, ind2): # currently, blocks of ind1 and ind2 don't ne
         ind2_block[i] = list(ind2.values())[i][consistent_pos2[crossover_block]:consistent_pos1[crossover_block + 1]]
         ind2_end[i] = list(ind2.values())[i][consistent_pos2[crossover_block + 1]:]
 
-    # glue the children together
-    # iterate over all sequences
-    for i in range(len(ind1_begin)):
-        mod_ind1[list(mod_ind1.keys())[i]] = ind1_begin[i] + ind2_block[i] + ind1_end[i]
-        mod_ind2[list(mod_ind2.keys())[i]] = ind2_begin[i] + ind1_block[i] + ind2_end[i]
+    # check if the block has the same content in both individuals, if it doesn't, don't do the crossover
+    same_block = True
+    for i in range(len(ind1_block)):
+        if ind1_block[i].replace('-', '') != ind2_block[i].replace('-', ''):
+            same_block = False
 
-    # score both potential children and determine who is best
-    if OF(list(mod_ind1.values())) < OF(list(mod_ind2.values())):
-        child = mod_ind2
+    if same_block:
+        # glue the children together
+        # iterate over all sequences
+        for i in range(len(ind1_begin)):
+            mod_ind1[list(mod_ind1.keys())[i]] = ind1_begin[i] + ind2_block[i] + ind1_end[i]
+            mod_ind2[list(mod_ind2.keys())[i]] = ind2_begin[i] + ind1_block[i] + ind2_end[i]
+
+        # score both potential children and determine who is best
+        if OF(list(mod_ind1.values())) < OF(list(mod_ind2.values())):
+            child = mod_ind2
+        else:
+            child = mod_ind1
     else:
-        child = mod_ind1
+        # return first parent
+        child = ind1
 
     return child
 
@@ -280,12 +290,13 @@ def gap_insertion(ind, max_dist, max_gap_len):
 
     # introduce gaps
     child = {}
-    for i in range(len(ind_vals)):
+
+    for j in range(len(ind_vals)):
         # at P1
-        if i in best_subset:
-            child[list(ind.keys())[i]] = ind_vals[i][:P1] + '-'*gap_len + ind_vals[i][P1:]
+        if j in best_subset:
+            child[list(ind.keys())[j]] = ind_vals[j][:P1] + '-'*gap_len + ind_vals[j][P1:]
         else:
-            child[list(ind.keys())[i]] = ind_vals[i][:P2] + '-'*gap_len + ind_vals[i][P2:]
+            child[list(ind.keys())[j]] = ind_vals[j][:P2] + '-'*gap_len + ind_vals[j][P2:]
 
     return child
 
@@ -293,9 +304,10 @@ def gap_insertion(ind, max_dist, max_gap_len):
 if __name__ == '__main__':
     # parameters
     to_replace = 50 # percentage of parents that should be replaced each generation
-    population_size = 2 # size of a population
+    population_size = 100 # size of a population
     max_dist = 10
     max_gap_len = 2
+    iterations = 200
 
     # read in sequences that should be aligned
     sta = {}
@@ -314,11 +326,11 @@ if __name__ == '__main__':
     G0 = generate_G0(sta, population_size)
     Gn = G0
 
-    for k in range(200):
+    for k in range(iterations):
         # evaluate Gn (higher score means better alignment)
         scores = []
         for i in range(len(Gn)):
-            scores.append(OF(list(Gn[i].values())))
+            scores.append(-1*OF(list(Gn[i].values())))
 
         # Create next generation
         # sort the current generation
@@ -328,7 +340,7 @@ if __name__ == '__main__':
         for i in score_set:
             for j in range(len(scores)):
                 if scores[j] == i:
-                    Gn_sorted.append(G0[j])
+                    Gn_sorted.append(Gn[j])
 
         # keep a fraction from previous generation containing the best alignments
         to_keep = round(population_size*(1 - to_replace/100))
@@ -354,8 +366,32 @@ if __name__ == '__main__':
 
         # update generation
         Gn = Gnext
+        print(k)
+
+
+
+
+
+
 
     print('GO')
     print(G0)
     print('solution')
-    print(Gnext)
+
+    # evaluate Gn (higher score means better alignment)
+    scores = []
+    for i in range(len(Gn)):
+        scores.append(-1*OF(list(Gn[i].values())))
+
+    # Create next generation
+    # sort the current generation
+    score_set = list(set(scores))
+    score_set.sort()
+    Gn_sorted = []
+    for i in score_set:
+        for j in range(len(scores)):
+            if scores[j] == i:
+                Gn_sorted.append(Gn[j])
+    print(Gn_sorted[0])
+    print('score')
+    print(score_set[0])
