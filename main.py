@@ -153,6 +153,28 @@ def one_point_crossover(ind1, ind2):
         # get the remainder of the sequences
         ind2_end[i] = list(ind2.values())[i][position2:]
 
+    # check if all sequences within a part have the same length
+    ind1_begin_lens = [len(seq) for seq in ind1_begin]
+    ind1_end_lens = [len(seq) for seq in ind1_end]
+    ind2_begin_lens = [len(seq) for seq in ind2_begin]
+    ind2_end_lens = [len(seq) for seq in ind2_end]
+
+    for i in range(len(ind1_begin)):
+        gap_size = max(ind1_begin_lens) - len(ind1_begin[i])
+        ind1_begin[i] = ind1_begin[i] + '-'*gap_size
+
+    for i in range(len(ind2_begin)):
+        gap_size = max(ind2_begin_lens) - len(ind2_begin[i])
+        ind2_begin[i] = ind2_begin[i] + '-'*gap_size
+
+    for i in range(len(ind1_end)):
+        gap_size = max(ind1_end_lens) - len(ind1_end[i])
+        ind1_end[i] = '-'*gap_size + ind1_end[i]
+
+    for i in range(len(ind2_end)):
+        gap_size = max(ind2_end_lens) - len(ind2_end[i])
+        ind2_end[i] = '-' * gap_size + ind2_end[i]
+
     # glue the sequences together
     # iterate over all sequences
     for i in range(len(ind1_begin)):
@@ -190,67 +212,79 @@ def uniform_crossover(ind1, ind2): # currently, blocks of ind1 and ind2 don't ne
         if consistent:
             consistent_pos1.append(i)
 
-        # find consistent positions in individual 2
-        consistent_pos2 = []
-        for i in range(len(list(ind2.values())[0])):
-            ref_char = list(ind2.values())[0][i]
-            consistent = False
-            if ref_char != "-":
-                consistent = True
-                # iterate over all sequences
-                for j in range(len(ind2.keys())):
-                    if list(ind2.values())[j][i] != ref_char:
-                        consistent = False
+    # find consistent positions in individual 2
+    consistent_pos2 = []
+    for i in range(len(list(ind2.values())[0])):
+        ref_char = list(ind2.values())[0][i]
+        consistent = False
+        if ref_char != "-":
+            consistent = True
+            # iterate over all sequences
+            for j in range(len(ind2.keys())):
+                if list(ind2.values())[j][i] != ref_char:
+                    consistent = False
 
-            if consistent:
-                consistent_pos2.append(i)
+        if consistent:
+            consistent_pos2.append(i)
 
     # randomly choose a block for crossover
-    if len(consistent_pos1) < len(consistent_pos2):
-        crossover_block = random.randint(0, (len(consistent_pos1) - 2))
+    # no crossover possible if there are less than 2 positions where the crossover could happen
+    print('posses')
+    print(len(consistent_pos1))
+    print(len(consistent_pos2))
+    crossover_possible = True
+    if (len(consistent_pos1) <= 2) | (len(consistent_pos2) <= 2):
+        crossover_possible = False
     else:
-        crossover_block = random.randint(0, (len(consistent_pos2) - 2))
-
-    # split children in sections
-    # initialize
-    ind1_begin = [""]*len(ind1.values())
-    ind1_block = [""]*len(ind1.values())
-    ind1_end = [""]*len(ind1.values())
-    mod_ind1 = {key: "" for key in ind1.keys()}
-
-    ind2_begin = [""]*len(ind2.values())
-    ind2_block = [""]*len(ind2.values())
-    ind2_end = [""]*len(ind2.values())
-    mod_ind2 = {key: "" for key in ind2.keys()}
-
-    # iterate over all sequences
-    for i in range(len(ind1.keys())):
-        ind1_begin[i] = list(ind1.values())[i][0:consistent_pos1[crossover_block]]
-        ind1_block[i] = list(ind1.values())[i][consistent_pos1[crossover_block]:consistent_pos1[crossover_block + 1]]
-        ind1_end[i] = list(ind1.values())[i][consistent_pos1[crossover_block + 1]:]
-
-        ind2_begin[i] = list(ind2.values())[i][0:consistent_pos2[crossover_block]]
-        ind2_block[i] = list(ind2.values())[i][consistent_pos2[crossover_block]:consistent_pos1[crossover_block + 1]]
-        ind2_end[i] = list(ind2.values())[i][consistent_pos2[crossover_block + 1]:]
-
-    # check if the block has the same content in both individuals, if it doesn't, don't do the crossover
-    same_block = True
-    for i in range(len(ind1_block)):
-        if ind1_block[i].replace('-', '') != ind2_block[i].replace('-', ''):
-            same_block = False
-
-    if same_block:
-        # glue the children together
-        # iterate over all sequences
-        for i in range(len(ind1_begin)):
-            mod_ind1[list(mod_ind1.keys())[i]] = ind1_begin[i] + ind2_block[i] + ind1_end[i]
-            mod_ind2[list(mod_ind2.keys())[i]] = ind2_begin[i] + ind1_block[i] + ind2_end[i]
-
-        # score both potential children and determine who is best
-        if OF(list(mod_ind1.values())) < OF(list(mod_ind2.values())):
-            child = mod_ind2
+        if len(consistent_pos1) < len(consistent_pos2):
+            crossover_block = random.randint(0, (len(consistent_pos1) - 2))
         else:
-            child = mod_ind1
+            crossover_block = random.randint(0, (len(consistent_pos2) - 2))
+
+    if crossover_possible:
+        # split children in sections
+        # initialize
+        ind1_begin = [""]*len(ind1.values())
+        ind1_block = [""]*len(ind1.values())
+        ind1_end = [""]*len(ind1.values())
+        mod_ind1 = {key: "" for key in ind1.keys()}
+
+        ind2_begin = [""]*len(ind2.values())
+        ind2_block = [""]*len(ind2.values())
+        ind2_end = [""]*len(ind2.values())
+        mod_ind2 = {key: "" for key in ind2.keys()}
+
+        # iterate over all sequences
+        for i in range(len(ind1.keys())):
+            ind1_begin[i] = list(ind1.values())[i][0:consistent_pos1[crossover_block]]
+            ind1_block[i] = list(ind1.values())[i][consistent_pos1[crossover_block]:consistent_pos1[crossover_block + 1]]
+            ind1_end[i] = list(ind1.values())[i][consistent_pos1[crossover_block + 1]:]
+
+            ind2_begin[i] = list(ind2.values())[i][0:consistent_pos2[crossover_block]]
+            ind2_block[i] = list(ind2.values())[i][consistent_pos2[crossover_block]:consistent_pos1[crossover_block + 1]]
+            ind2_end[i] = list(ind2.values())[i][consistent_pos2[crossover_block + 1]:]
+
+        # check if the block has the same content in both individuals, if it doesn't, don't do the crossover
+        same_block = True
+        for i in range(len(ind1_block)):
+            if ind1_block[i].replace('-', '') != ind2_block[i].replace('-', ''):
+                same_block = False
+
+        if same_block:
+            # glue the children together
+            # iterate over all sequences
+            for i in range(len(ind1_begin)):
+                mod_ind1[list(mod_ind1.keys())[i]] = ind1_begin[i] + ind2_block[i] + ind1_end[i]
+                mod_ind2[list(mod_ind2.keys())[i]] = ind2_begin[i] + ind1_block[i] + ind2_end[i]
+
+            # score both potential children and determine who is best
+            if OF(list(mod_ind1.values())) < OF(list(mod_ind2.values())):
+                child = mod_ind2
+            else:
+                child = mod_ind1
+        else:
+            # return first parent
+            child = ind1
     else:
         # return first parent
         child = ind1
@@ -358,15 +392,21 @@ if __name__ == '__main__':
             random_operator = random.randint(0, 3)
             parent1, parent2 = np.random.choice(Gn_sorted, size = 2, p = percents)
             if random_operator == 0:
+                print("one point crossover")
                 Gnext.append(one_point_crossover(parent1, parent2))
+                #Gnext.append(gap_insertion(parent1, max_dist, max_gap_len))
             elif random_operator == 1:
+                print("uniform crossover")
                 Gnext.append(uniform_crossover(parent1, parent2))
+                #Gnext.append(gap_insertion(parent1, max_dist, max_gap_len))
             elif random_operator == 2:
+                print("gap insertion")
                 Gnext.append(gap_insertion(parent1, max_dist, max_gap_len))
 
         # update generation
         Gn = Gnext
-        print(k)
+        print('new generation')
+
 
 
 
